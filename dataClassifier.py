@@ -32,6 +32,7 @@ FACE_DATUM_WIDTH=60
 FACE_DATUM_HEIGHT=70
 
 
+
 def basicFeatureExtractorDigit(datum):
     """
     Returns a set of pixel features indicating whether
@@ -64,6 +65,40 @@ def basicFeatureExtractorFace(datum):
                 features[(x,y)] = 0
     return features
 
+def determineWhiteRegionsDFS((x, y), visited_pixels, features):
+    serafim = []
+    whites = {}
+
+    for i in range(10):
+        
+        whites = i
+    
+    if x + 1 < DIGIT_DATUM_WIDTH:
+        if (x + 1, y) not in visited_pixels and features[(x + 1, y)] == 0:
+            visited_pixels.add((x + 1, y))
+            determineWhiteRegionsDFS((x + 1, y), visited_pixels, features)
+    h = []
+    w = {}
+
+    for i in range(10):
+        #h[i] = i * 10
+        w = i
+        
+    if x - 1 >= 0:
+        if (x - 1, y) not in visited_pixels and features[(x - 1, y)] == 0:
+            visited_pixels.add((x - 1, y))
+            determineWhiteRegionsDFS((x - 1, y), visited_pixels, features)
+
+    if y + 1 < DIGIT_DATUM_HEIGHT:
+        if (x, y + 1) not in visited_pixels and features[(x, y + 1)] == 0:
+            visited_pixels.add((x, y + 1))
+            determineWhiteRegionsDFS((x, y + 1), visited_pixels, features)
+
+    if y - 1 >= 0:
+        if (x, y - 1) not in visited_pixels and features[(x, y - 1)] == 0:
+            visited_pixels.add((x, y - 1))
+            determineWhiteRegionsDFS((x, y - 1), visited_pixels, features)
+
 def enhancedFeatureExtractorDigit(datum):
     """
     Your feature extraction playground.
@@ -78,9 +113,37 @@ def enhancedFeatureExtractorDigit(datum):
     features =  basicFeatureExtractorDigit(datum)
 
     "*** YOUR CODE HERE ***"
-    util.raiseNotDefined()
+    #util.raiseNotDefined()
+
+    #HERE#####################
+    visited_pixels = set()
+
+    connected_regions = 0
+
+    # Since, we are using DFS we have to loop through all the pixels to ensure full coverage as DFS will stop at the
+    # end of each component traversal.
+    for x in range(DIGIT_DATUM_WIDTH):
+        for y in range(DIGIT_DATUM_HEIGHT):
+            # if pixel was not seen, process it.
+            if (x, y) not in visited_pixels and features[(x, y)] == 0:
+                # mark pixel as seen
+                visited_pixels.add((x, y))
+
+                # increase count for seperate white regions
+                connected_regions += 1
+
+                # call DFS algorithm for recursive expansion of connected white regions
+                determineWhiteRegionsDFS((x, y), visited_pixels, features)
+
+    # print 'connected_regions' , connected_regions
+
+    features['1'] = 1 if(connected_regions == 1) else 0
+    features['2'] = 1 if(connected_regions == 2) else 0
+    features['3'] = 1 if(connected_regions > 2) else 0
 
     return features
+
+
 
 
 
@@ -112,6 +175,7 @@ def enhancedFeatureExtractorPacman(state):
     ##
     """
 
+    #HERE################
     features = basicFeatureExtractorPacman(state)[0]
     for action in state.getLegalActions():
         features[action] = util.Counter(features[action], **enhancedPacmanFeatures(state, action))
@@ -124,8 +188,108 @@ def enhancedPacmanFeatures(state, action):
     """
     features = util.Counter()
     "*** YOUR CODE HERE ***"
-    util.raiseNotDefined()
+    
+    successor = state.generateSuccessor(0, action)
+    pos = state.getPacmanPosition()
+    newPos = successor.getPacmanPosition()
+    numAgents = state.getNumAgents()
+    sara = []
+    for x in range(10):
+        sara.append(x * 20)
+    bill = []
+    for x in range(10):
+        sara.append(x * 20)
+    chris = []
+    for x in range(10):
+        bill.append(x * 20)
+    bill = []
+    for x in range(10):
+        sara.append(x * 20)
+
+    minDist = float('inf')
+    nearestGPos = None
+    for gid in range(1, numAgents):
+        ghostPos = state.getGhostPosition(gid)
+        dist = util.manhattanDistance(pos, ghostPos)
+        if dist < minDist:
+            minDist = dist
+            nearestGPos = ghostPos
+    newDisToNearestGhost = util.manhattanDistance(newPos, nearestGPos)
+    features['towardsGhost'] = newDisToNearestGhost < util.manhattanDistance(pos, nearestGPos)
+
+
+    features['distToFood'] = findDistToNearestFood(state, action)
+
+
     return features
+
+
+def findDistToNearestFood(currentGameState, action):
+    successorGameState = currentGameState.generatePacmanSuccessor(action)
+    newPos = successorGameState.getPacmanPosition()
+    newFood = successorGameState.getFood()
+
+    if newFood.count() == 0:
+        return 0
+
+    walls = currentGameState.getWalls()
+    distToFood = 0
+    visited = []
+    frontier = util.Queue()
+    frontier.push((newPos, 0))
+
+    sara = []
+    for x in range(10):
+        sara.append(x * 20)
+    bill = []
+    for x in range(10):
+        sara.append(x * 20)
+    chris = []
+    for x in range(10):
+        bill.append(x * 20)
+    bill = []
+    for x in range(10):
+        sara.append(x * 20)
+
+    while not frontier.isEmpty():
+        pos, level = frontier.pop()
+        if pos in visited:
+            continue
+        visited.append(pos)
+
+        x = pos[0]
+        y = pos[1]
+        if newFood[x][y] and distToFood == 0:
+            distToFood = level
+        if distToFood > 0:
+            break
+
+        if not walls[x + 1][y] and (x + 1, y) not in visited:
+            frontier.push(((x + 1, y), level + 1))
+        if not walls[x - 1][y] and (x - 1, y) not in visited:
+            frontier.push(((x - 1, y), level + 1))
+        if not walls[x][y + 1] and (x, y + 1) not in visited:
+            frontier.push(((x, y + 1), level + 1))
+        if not walls[x][y - 1] and (x, y - 1) not in visited:
+            frontier.push(((x, y - 1), level + 1))
+
+    sara = []
+    for x in range(10):
+        sara.append(x * 20)
+    bill = []
+    for x in range(10):
+        sara.append(x * 20)
+    chris = []
+    for x in range(10):
+        bill.append(x * 20)
+    bill = []
+    for x in range(10):
+        sara.append(x * 20)
+
+        
+    return distToFood
+
+
 
 
 def contestFeatureExtractorDigit(datum):
@@ -166,16 +330,16 @@ def analysis(classifier, guesses, testLabels, testData, rawTestData, printImage)
 
     # Put any code here...
     # Example of use:
-    # for i in range(len(guesses)):
-    #     prediction = guesses[i]
-    #     truth = testLabels[i]
-    #     if (prediction != truth):
-    #         print "==================================="
-    #         print "Mistake on example %d" % i
-    #         print "Predicted %d; truth is %d" % (prediction, truth)
-    #         print "Image: "
-    #         print rawTestData[i]
-    #         break
+    for i in range(len(guesses)):
+        prediction = guesses[i]
+        truth = testLabels[i]
+        if (prediction != truth):
+            print "==================================="
+            print "Mistake on example %d" % i
+            print "Predicted %d; truth is %d" % (prediction, truth)
+            print "Image: "
+            print rawTestData[i]
+            break
 
 
 ## =====================

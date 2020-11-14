@@ -55,8 +55,16 @@ class PerceptronClassifier:
             print "Starting iteration ", iteration, "..."
             for i in range(len(trainingData)):
                 "*** YOUR CODE HERE ***"
-                util.raiseNotDefined()
+                #util.raiseNotDefined()
 
+                scores = util.Counter()
+                scores.update({L: self.weights[L] * trainingData[i] for L in self.legalLabels})
+                label = scores.argMax()
+                    
+                if label != trainingLabels[i]:
+                    self.weights[trainingLabels[i]] += trainingData[i]
+                    self.weights[label] -= trainingData[i]
+                
     def classify(self, data ):
         """
         Classifies each datum as the label that most closely matches the prototype vector
@@ -80,6 +88,11 @@ class PerceptronClassifier:
         featuresWeights = []
 
         "*** YOUR CODE HERE ***"
-        util.raiseNotDefined()
+        #util.raiseNotDefined()
+        featuresWeights = self.weights[label].sortedKeys()
 
-        return featuresWeights
+        weights = []
+        for i in range(100):
+            weights.append(featuresWeights[i])
+        
+        return weights
